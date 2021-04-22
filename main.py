@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
-import sys
 import json
 import time
 import requests
-import re
 try:
     from .credentials import Credentials
 except:
@@ -11,11 +9,10 @@ except:
 
 from pprint import pprint
 
-import os
-
-import google_auth_oauthlib.flow
-import googleapiclient.discovery
-import googleapiclient.errors
+#import re
+#import google_auth_oauthlib.flow
+#import googleapiclient.discovery
+#import googleapiclient.errors
 
 scopes = ["https://www.googleapis.com/auth/youtube.readonly", "https://www.googleapis.com/auth/youtube", "https://www.googleapis.com/auth/youtube.force-ssl"]
 
@@ -28,8 +25,6 @@ data = {}
 # 'date': datetime
 # }
 
-prefix = '!'
-
 class YTChat:
     def __init__(self, cb):
         self.cb = cb
@@ -37,6 +32,7 @@ class YTChat:
         self.token_str = self.credentials.read()
         self.liveChatID = self.get_livechat_id()
         self.stopped = False
+        self.prefix = '!'
         if not self.liveChatID:
             print("[] No livestream found :(")
         else:
@@ -44,12 +40,13 @@ class YTChat:
 
     def handle_msg(self, msg):
         # pprint(msg)
-        message = re.search(r"\'([A-Za-z0-9_]+)\'", msg["snippet"]["textMessageDetails"]["messageText"])
-        author = re.search(r"\'([A-Za-z0-9_]+)\'", msg["authorDetails"]["displayName"])
+        self.message = msg["snippet"]["textMessageDetails"]["messageText"]
+        self.author = msg["authorDetails"]["displayName"]
+        comb = str(self.author + ": " + self.message)
         if msg["snippet"]["type"] != "textMessageEvent":
             print("non text message event")
             return
-        self.cb(author + message)
+        self.cb(comb)
 
     def main(self):
         nextPageToken = ''
@@ -65,6 +62,7 @@ class YTChat:
                        'pageToken': nextPageToken}
             url = 'https://content.googleapis.com/youtube/v3/liveChat/messages'
             headers = {"Authorization": "Bearer " + token_str}
+                        
             r = requests.get(url, headers=headers, params=payload)
 
             if (r.status_code == 200):
@@ -73,6 +71,8 @@ class YTChat:
                 msgs = resp["items"]
                 for msg in msgs:
                     self.handle_msg(msg)
+                    if self.message.startswith(self.prefix):
+                        self.send_message()
 
                 delay = resp['pollingIntervalMillis']/1000
             elif (r.status_code == 401):  # Unauthorized
@@ -88,7 +88,6 @@ class YTChat:
                 resp = r.json()
                 print(json.dumps(resp, indent=4, sort_keys=True))
                 delay = 30
-                delay = 3  #FIXME testing
 
             time.sleep(delay)
 
@@ -119,39 +118,32 @@ class YTChat:
             resp = r.json()
             print(json.dumps(resp, indent=4, sort_keys=True))
 
-    def send_message(liveChatID,message,author,prefix):
+    def send_message(self,newmessage=None):
         # os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+        token_str = self.credentials.read()
 
-        api_service_name = "youtube"
-        api_version = "v3"
-        client_secrets_file = "client_secrets.json"
+        if self.message == str(self.prefix + "command"):
+          newmessage = "This is a test of the command system."
 
-        # Get credentials and create an API client
-        flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
-            client_secrets_file, scopes)
-        credentials = flow.run_console()
-        youtube = googleapiclient.discovery.build(
-            api_service_name, api_version, credentials=credentials)
-        liveChatId = print(f'"{liveChatID}"')
+        payload1 = {"snippet": {"textMessageetails": {"messageText": newmessage}} ,"type": "textMessageEvent","liveChatId": self.liveChatID}
+        result = json.dumps(payload1)
+        payload = print(type(result))
+        url = 'https://content.googleapis.com/youtube/v3/liveChat/messages'
+        headers1 = {'Authorization': 'Bearer ' + token_str, 'Accept': 'application/json', 'Content-Type': 'application/json'}
+        result2 = json.dumps(headers1)
+        headers = print(type(result2))
+                        
+        r = requests.post(url, headers=headers, data=payload)
 
-        # NEW COMMANDS
-        if message == prefix + "command":
-            newmessage = "This is a test of the command system."
-
-        request = youtube.liveChatMessages().insert(
-            part="snippet",
-            body={
-              "snippet": {
-                "liveChatId": liveChatId,
-                "textMessageDetails": {
-                  "messageText": newmessage
-                },
-                "type": "textMessageEvent"
-              }
-            }
-        )
-        response = request.execute()
-        print(response)
+        if (r.status_code == 200):
+            resp = r.json()
+            send = resp["items"]
+            if newmessage != "None":
+              print(send)
+        else:
+            print("Unrecognized error:\n")
+            resp = r.json()
+            print(json.dumps(resp, indent=4, sort_keys=True))
 
 if __name__ == '__main__':
     yt = YTChat(pprint)
