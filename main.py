@@ -9,10 +9,10 @@ except:
 
 from pprint import pprint
 
-#import re
-#import google_auth_oauthlib.flow
-#import googleapiclient.discovery
-#import googleapiclient.errors
+import os
+import google_auth_oauthlib.flow
+import googleapiclient.discovery
+import googleapiclient.errors
 
 scopes = ["https://www.googleapis.com/auth/youtube.readonly", "https://www.googleapis.com/auth/youtube", "https://www.googleapis.com/auth/youtube.force-ssl"]
 
@@ -50,7 +50,8 @@ class YTChat:
         if self.message.startswith(self.prefix):
           if self.message == str(self.prefix + "command"):
             response = "This is a test of the command system."
-            self.send_message(response)
+            self.send_message()
+            
 
     def main(self):
         nextPageToken = ''
@@ -73,8 +74,11 @@ class YTChat:
                 resp = r.json()
                 nextPageToken = resp["nextPageToken"]
                 msgs = resp["items"]
-                for msg in msgs:
-                    self.handle_msg(msg)
+                if msgs:
+                  msg = msgs[-1]
+                #for msg in msgs:
+                #    self.handle_msg(msg)
+                  self.handle_msg(msg)
 
                 delay = resp['pollingIntervalMillis']/1000
             elif (r.status_code == 401):  # Unauthorized
@@ -119,49 +123,36 @@ class YTChat:
             print("Unrecognized error:\n")
             resp = r.json()
             print(json.dumps(resp, indent=4, sort_keys=True))
-
-    def send_message(self,response=None):
+ 
+    def send_message(self,response=str(None)):
         token_str = ''
-        while not self.stopped:
-            # Make sure access token is valid before request
-            # credentials.read() should refresh the token automatically
-            if self.credentials.expired() or token_str == '':
-                token_str = self.credentials.read()
-
-            payload1 = {"snippet": {"textMessageDetails": {"messageText": response}} ,"type": "textMessageEvent","liveChatId": self.liveChatID}
-            result = json.dumps(payload1)
-            payload = print(str(result))
-            url = 'https://content.googleapis.com/youtube/v3/liveChat/messages'
-            headers1 = {'Authorization': 'Bearer ' + token_str, 'Accept': 'application/json', 'Content-Type': 'application/json'}
-            result2 = json.dumps(headers1)
-            headers = print(str(result2))
+        apitoken = "AIzaSyB6DqoOnLuSGiyODyfaEeehdAlpp1lmOiU"
+        # Make sure access token is valid before request
+        # credentials.read() should refresh the token automatically
+        if self.credentials.expired() or token_str == '':
+          token_str = self.credentials.read()
+        #{'part':{'snippet':{'liveChatId':self.liveChatID,'type': 'textMessageEvent','textMessageDetails':{'messageText':response}}}, 'key': apitoken}
+        payload1 = {'snippet':{'liveChatId':self.liveChatID,'type':'textMessageEvent','textMessageDetails':{'messageText':'Your cool text message goes here!'}},'key':apitoken}
+        #result = json.dumps(payload1)
+        #payload = print(result)
+        url = 'https://content.googleapis.com/youtube/v3/liveChat/messages'
+        headers = {"Authorization":"Bearer "+token_str,"Accept": "application/json","Content-Type":"application/json"}
+        #result2 = json.dumps(headers1)
+        #headers = print(result2) 
                         
-            r = requests.post(url, headers=headers, params=payload)
+        r = requests.post(url, headers=headers, params=payload1)
 
-            if (r.status_code == 200):
-              resp = r.json()
-              send = resp["items"]
-              if response != "None":
-                print(send)
-              self.stopped = True
+        if (r.status_code == 200):
+          resp = r.json()
+          send = resp["items"]
+          if response != "None":
+            print(send)
+          self.stopped = True
+        else:
+          print("Unrecognized error:\n")
+          resp = r.json()
+          print(json.dumps(resp, indent=4, sort_keys=True))
 
-              delay = resp['pollingIntervalMillis']/1000
-
-            elif (r.status_code == 401):  # Unauthorized
-              delay = 10
-              if not self.credentials.expired:
-                  print("Error: Unauthorized. waiting 30 seconds...")
-                  if (debug >= 1):
-                    resp = r.json()
-                    print(json.dumps(resp, indent=4, sort_keys=True))
-                    delay = 30
-            else:
-              print("Unrecognized error:\n")
-              resp = r.json()
-              print(json.dumps(resp, indent=4, sort_keys=True))
-              delay = 30
-
-            time.sleep(delay)
 if __name__ == '__main__':
     yt = YTChat(pprint)
     yt.main()

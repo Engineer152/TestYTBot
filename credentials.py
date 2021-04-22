@@ -22,16 +22,14 @@ class Credentials:
         token_obj = self.credentials.get_access_token()
         token_str = str(token_obj.access_token)
         return token_str
-
-#https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/youtube 
-
+        
     def auth(self):
         if os.path.isfile("OAuthCredentials.json"):
             print("Trying to auth but OAuthCredentials.json exists")
             return
         flow = client.flow_from_clientsecrets(
             'client_secrets.json',
-            scope='https://www.googleapis.com/auth/youtube.force-ssl',
+            scope=['https://www.googleapis.com/auth/youtube.force-ssl','https://www.googleapis.com/auth/youtube.readonly','https://www.googleapis.com/auth/youtube'],
             redirect_uri='https://dpgbot.appspot.com/oauth2callback')
 
         auth_uri = flow.step1_get_authorize_url()
