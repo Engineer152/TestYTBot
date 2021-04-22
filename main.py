@@ -47,6 +47,10 @@ class YTChat:
             print("non text message event")
             return
         self.cb(comb)
+        if self.message.startswith(self.prefix):
+          if self.message == str(self.prefix + "command"):
+            response = "This is a test of the command system."
+            self.send_message(response)
 
     def main(self):
         nextPageToken = ''
@@ -71,8 +75,6 @@ class YTChat:
                 msgs = resp["items"]
                 for msg in msgs:
                     self.handle_msg(msg)
-                    if self.message.startswith(self.prefix):
-                        self.send_message()
 
                 delay = resp['pollingIntervalMillis']/1000
             elif (r.status_code == 401):  # Unauthorized
@@ -118,33 +120,48 @@ class YTChat:
             resp = r.json()
             print(json.dumps(resp, indent=4, sort_keys=True))
 
-    def send_message(self,newmessage=None):
-        # os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
-        token_str = self.credentials.read()
+    def send_message(self,response=None):
+        token_str = ''
+        while not self.stopped:
+            # Make sure access token is valid before request
+            # credentials.read() should refresh the token automatically
+            if self.credentials.expired() or token_str == '':
+                token_str = self.credentials.read()
 
-        if self.message == str(self.prefix + "command"):
-          newmessage = "This is a test of the command system."
-
-        payload1 = {"snippet": {"textMessageetails": {"messageText": newmessage}} ,"type": "textMessageEvent","liveChatId": self.liveChatID}
-        result = json.dumps(payload1)
-        payload = print(type(result))
-        url = 'https://content.googleapis.com/youtube/v3/liveChat/messages'
-        headers1 = {'Authorization': 'Bearer ' + token_str, 'Accept': 'application/json', 'Content-Type': 'application/json'}
-        result2 = json.dumps(headers1)
-        headers = print(type(result2))
+            payload1 = {"snippet": {"textMessageDetails": {"messageText": response}} ,"type": "textMessageEvent","liveChatId": self.liveChatID}
+            result = json.dumps(payload1)
+            payload = print(str(result))
+            url = 'https://content.googleapis.com/youtube/v3/liveChat/messages'
+            headers1 = {'Authorization': 'Bearer ' + token_str, 'Accept': 'application/json', 'Content-Type': 'application/json'}
+            result2 = json.dumps(headers1)
+            headers = print(str(result2))
                         
-        r = requests.post(url, headers=headers, data=payload)
+            r = requests.post(url, headers=headers, params=payload)
 
-        if (r.status_code == 200):
-            resp = r.json()
-            send = resp["items"]
-            if newmessage != "None":
-              print(send)
-        else:
-            print("Unrecognized error:\n")
-            resp = r.json()
-            print(json.dumps(resp, indent=4, sort_keys=True))
+            if (r.status_code == 200):
+              resp = r.json()
+              send = resp["items"]
+              if response != "None":
+                print(send)
+              self.stopped = True
 
+              delay = resp['pollingIntervalMillis']/1000
+
+            elif (r.status_code == 401):  # Unauthorized
+              delay = 10
+              if not self.credentials.expired:
+                  print("Error: Unauthorized. waiting 30 seconds...")
+                  if (debug >= 1):
+                    resp = r.json()
+                    print(json.dumps(resp, indent=4, sort_keys=True))
+                    delay = 30
+            else:
+              print("Unrecognized error:\n")
+              resp = r.json()
+              print(json.dumps(resp, indent=4, sort_keys=True))
+              delay = 30
+
+            time.sleep(delay)
 if __name__ == '__main__':
     yt = YTChat(pprint)
     yt.main()
