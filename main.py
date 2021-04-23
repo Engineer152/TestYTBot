@@ -14,7 +14,7 @@ VERSION = "0.3.2"
 PYTHONIOENCODING = "UTF-8"
 debug = 0
 data = {}
-num = 3
+num = 1
 
 class YTChat:
     def __init__(self, cb):
@@ -93,12 +93,14 @@ class YTChat:
                     delay = 30
 
             elif (r.status_code == 403): #This will swap auth codes
+              resp = r.json()
+              print(json.dumps(resp, indent=4, sort_keys=True))
               if num != 4:
                 num += 1
+                print("Searching for a new auth code...")
               else:
                 num = 1
-              print("Searching for a new auth code...")
-              delay = 1
+              delay = 10
 
             else:
                 print("Unrecognized error:\n")

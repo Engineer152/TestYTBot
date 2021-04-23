@@ -24,7 +24,7 @@ class Credentials:
           credentialsFile = open("./DPGBot4/OAuthCredentials.json", "r")
         # MAIN BOT CREDENTIALS
         elif num == 10: 
-          credentialsFile = open("./DPGBot/dpgbotOAuthCredentials.json", "r")
+          credentialsFile = open("./MainDPGBot/dpgbotOAuthCredentials.json", "r")
         credentialsJSON = credentialsFile.read()
 
         self.credentials = client.OAuth2Credentials.from_json(credentialsJSON)
