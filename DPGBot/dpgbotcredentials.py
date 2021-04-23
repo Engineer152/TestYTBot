@@ -9,36 +9,26 @@ class Credentials:
     def expired(self):
         return self.credentials.access_token_expired
 
-    def read(self,num):
-        #if not os.path.isfile("OAuthCredentials.json"):
-        #    print("Auth first")
-        #    sys.exit(1)
-        # LIST OF MULTIPLE STREAM CREDENTIALS
-        if num == 1:
-          credentialsFile = open("./DPGBot1/OAuthCredentials.json", "r")
-        if num == 2:
-          credentialsFile = open("./DPGBot2/OAuthCredentials.json", "r")
-        if num == 3:
-          credentialsFile = open("./DPGBot3/OAuthCredentials.json", "r")
-        if num == 4:
-          credentialsFile = open("./DPGBot4/OAuthCredentials.json", "r")
-        # MAIN BOT CREDENTIALS
-        elif num == 10: 
-          credentialsFile = open("./DPGBot/dpgbotOAuthCredentials.json", "r")
+    def read(self):
+        if not os.path.isfile("dpgbotOAuthCredentials.json"):
+            print("Auth first")
+            sys.exit(1)
+
+        credentialsFile = open("dpgbotOAuthCredentials.json", "r")
         credentialsJSON = credentialsFile.read()
 
-        self.credentials = client.OAuth2Credentials.from_json(credentialsJSON)
+        self.credentials = client.dpgbotOAuth2Credentials.from_json(credentialsJSON)
 
         token_obj = self.credentials.get_access_token()
         token_str = str(token_obj.access_token)
         return token_str
         
     def auth(self):
-        if os.path.isfile("OAuthCredentials.json"):
-            print("Trying to auth but OAuthCredentials.json exists")
+        if os.path.isfile("dpgbotOAuthCredentials.json"):
+            print("Trying to auth but dpgbotOAuthCredentials.json exists")
             return
         flow = client.flow_from_clientsecrets(
-            'client_secrets.json',
+            'dpgbot_client_secrets.json',
             scope=['https://www.googleapis.com/auth/youtube.force-ssl','https://www.googleapis.com/auth/youtube.readonly','https://www.googleapis.com/auth/youtube'],
             redirect_uri='https://dpgbot.appspot.com/oauth2callback')
 
@@ -51,7 +41,7 @@ class Credentials:
         self.credentials = flow.step2_exchange(auth_code)
         self.credentials.authorize(httplib2.Http())
 
-        outFile = open("OAuthCredentials.json", "w")
+        outFile = open("dpgbotOAuthCredentials.json", "w")
         outFile.write(str(self.credentials.to_json()))
         outFile.close()
 

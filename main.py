@@ -14,18 +14,20 @@ VERSION = "0.3.2"
 PYTHONIOENCODING = "UTF-8"
 debug = 0
 data = {}
+num = 3
 
 class YTChat:
     def __init__(self, cb):
         self.cb = cb
         self.credentials = Credentials()
         self.commands = Dudes()
-        self.token_str = self.credentials.read()
+        self.token_str = self.credentials.read(num)
         self.liveChatID = self.get_livechat_id()
         self.stopped = False
         self.prefix = '-'
         if not self.liveChatID:
             print("[] No livestream found :(")
+            self.stopped = True
         else:
             print("Live Chat ID", self.liveChatID)
 
@@ -40,23 +42,26 @@ class YTChat:
         self.cb(comb)
         if self.message.startswith(self.prefix):
           cmd = self.message[1:]
-          if self.commands.responses(cmd) != "None":
-            self.send_message(str(self.commands.responses(cmd)))
+          author = self.author
+          if self.commands.responses(author,cmd) != "None":
+            self.send_message(str(self.commands.responses(author,cmd)))
           else:
             print("ERROR: " + self.prefix + cmd + " command not found.")
         
         #if self.message == str(self.prefix + "command"):
         #    response = "This is a test of the command system."
         #    self.send_message(response)
-            
+
     def main(self):
         nextPageToken = ''
         token_str = ''
+        num = 1
+        delay = 1
         while not self.stopped:
             # Make sure access token is valid before request
             # credentials.read() should refresh the token automatically
             if self.credentials.expired() or token_str == '':
-                token_str = self.credentials.read()
+                token_str = self.credentials.read(num)
 
             payload = {'liveChatId': self.liveChatID,
                        'part': 'snippet,authorDetails','maxResults1': 1, 'pageToken': nextPageToken}
@@ -74,8 +79,10 @@ class YTChat:
                 #for msg in msgs:
                 #    self.handle_msg(msg)
                   self.handle_msg(msg)
+                delay = 8.64
+                #delay = resp['pollingIntervalMillis']/250
+                #/1000
 
-                delay = resp['pollingIntervalMillis']/1000
             elif (r.status_code == 401):  # Unauthorized
                 delay = 10
                 if not self.credentials.expired:
@@ -84,6 +91,15 @@ class YTChat:
                         resp = r.json()
                         print(json.dumps(resp, indent=4, sort_keys=True))
                     delay = 30
+
+            elif (r.status_code == 403): #This will swap auth codes
+              if num != 4:
+                num += 1
+                delay = 0
+              else:
+                num = 1
+              
+
             else:
                 print("Unrecognized error:\n")
                 resp = r.json()
@@ -93,7 +109,7 @@ class YTChat:
             time.sleep(delay)
 
     def get_livechat_id(self):
-        token_str = self.credentials.read()
+        token_str = self.credentials.read(num)
         payload = {'broadcastStatus': 'active',
                    'broadcastType': 'all',
                    'part': 'id,snippet,contentDetails'
@@ -121,7 +137,7 @@ class YTChat:
  
     def send_message(self,response=None):
         #apitoken = 'AIzaSyB6DqoOnLuSGiyODyfaEeehdAlpp1lmOiU'
-        token_str = self.credentials.read()
+        token_str = self.credentials.read(num=10)
 
         data = json.dumps({'snippet':{'liveChatId': self.liveChatID,'type':'textMessageEvent','textMessageDetails':{'messageText':response}}})
         url = 'https://youtube.googleapis.com/youtube/v3/liveChat/messages?part=snippet'
