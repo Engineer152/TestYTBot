@@ -2,6 +2,7 @@
 import json
 import time
 import requests
+from commands import Dudes
 try:
     from .credentials import Credentials
 except:
@@ -9,26 +10,16 @@ except:
 
 from pprint import pprint
 
-import os
-import google_auth_oauthlib.flow
-import googleapiclient.discovery
-import googleapiclient.errors
-
-scopes = ["https://www.googleapis.com/auth/youtube.readonly", "https://www.googleapis.com/auth/youtube", "https://www.googleapis.com/auth/youtube.force-ssl"]
-
 VERSION = "0.3.2"
 PYTHONIOENCODING = "UTF-8"
 debug = 0
 data = {}
-# store data[chat id][user id] = {
-# 'msg': 'asd',
-# 'date': datetime
-# }
 
 class YTChat:
     def __init__(self, cb):
         self.cb = cb
         self.credentials = Credentials()
+        self.commands = Dudes()
         self.token_str = self.credentials.read()
         self.liveChatID = self.get_livechat_id()
         self.stopped = False
@@ -48,11 +39,16 @@ class YTChat:
             return
         self.cb(comb)
         if self.message.startswith(self.prefix):
-          if self.message == str(self.prefix + "command"):
-            response = "This is a test of the command system."
-            self.send_message()
+          cmd = self.message[1:]
+          if self.commands.responses(cmd) != "None":
+            self.send_message(str(self.commands.responses(cmd)))
+          else:
+            print("ERROR: !" + cmd + " command not found.")
+        
+        #if self.message == str(self.prefix + "command"):
+        #    response = "This is a test of the command system."
+        #    self.send_message(response)
             
-
     def main(self):
         nextPageToken = ''
         token_str = ''
@@ -63,8 +59,7 @@ class YTChat:
                 token_str = self.credentials.read()
 
             payload = {'liveChatId': self.liveChatID,
-                       'part': 'snippet,authorDetails',
-                       'pageToken': nextPageToken}
+                       'part': 'snippet,authorDetails','maxResults1': 1, 'pageToken': nextPageToken}
             url = 'https://content.googleapis.com/youtube/v3/liveChat/messages'
             headers = {"Authorization": "Bearer " + token_str}
                         
@@ -124,30 +119,22 @@ class YTChat:
             resp = r.json()
             print(json.dumps(resp, indent=4, sort_keys=True))
  
-    def send_message(self,response=str(None)):
-        token_str = ''
-        apitoken = "AIzaSyB6DqoOnLuSGiyODyfaEeehdAlpp1lmOiU"
-        # Make sure access token is valid before request
-        # credentials.read() should refresh the token automatically
-        if self.credentials.expired() or token_str == '':
-          token_str = self.credentials.read()
-        #{'part':{'snippet':{'liveChatId':self.liveChatID,'type': 'textMessageEvent','textMessageDetails':{'messageText':response}}}, 'key': apitoken}
-        payload1 = {'snippet':{'liveChatId':self.liveChatID,'type':'textMessageEvent','textMessageDetails':{'messageText':'Your cool text message goes here!'}},'key':apitoken}
-        #result = json.dumps(payload1)
-        #payload = print(result)
-        url = 'https://content.googleapis.com/youtube/v3/liveChat/messages'
-        headers = {"Authorization":"Bearer "+token_str,"Accept": "application/json","Content-Type":"application/json"}
-        #result2 = json.dumps(headers1)
-        #headers = print(result2) 
-                        
-        r = requests.post(url, headers=headers, params=payload1)
+    def send_message(self,response=None):
+        #apitoken = 'AIzaSyB6DqoOnLuSGiyODyfaEeehdAlpp1lmOiU'
+        token_str = self.credentials.read()
+
+        data = json.dumps({'snippet':{'liveChatId': self.liveChatID,'type':'textMessageEvent','textMessageDetails':{'messageText':response}}})
+        url = 'https://youtube.googleapis.com/youtube/v3/liveChat/messages?part=snippet'
+        headers = {'Authorization':'Bearer "' + token_str + '"', 'Accept': 'application/json','Content-Type': 'application/json'}
+
+        if response != "None":
+          r = requests.post(url, headers=headers, data=data)
+        else:
+          print("Error: No Response Found")
 
         if (r.status_code == 200):
           resp = r.json()
-          send = resp["items"]
-          if response != "None":
-            print(send)
-          self.stopped = True
+
         else:
           print("Unrecognized error:\n")
           resp = r.json()
