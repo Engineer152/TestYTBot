@@ -79,7 +79,7 @@ class YTChat:
                 #for msg in msgs:
                 #    self.handle_msg(msg)
                   self.handle_msg(msg)
-                delay = 8.64
+                delay = 2.16
                 #delay = resp['pollingIntervalMillis']/250
                 #/1000
 
@@ -95,10 +95,10 @@ class YTChat:
             elif (r.status_code == 403): #This will swap auth codes
               if num != 4:
                 num += 1
-                delay = 0
               else:
                 num = 1
-              
+              print("Searching for a new auth code...")
+              delay = 1
 
             else:
                 print("Unrecognized error:\n")
