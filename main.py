@@ -23,7 +23,7 @@ class YTChat:
         self.token_str = self.credentials.read()
         self.liveChatID = self.get_livechat_id()
         self.stopped = False
-        self.prefix = '!'
+        self.prefix = '-'
         if not self.liveChatID:
             print("[] No livestream found :(")
         else:
@@ -43,7 +43,7 @@ class YTChat:
           if self.commands.responses(cmd) != "None":
             self.send_message(str(self.commands.responses(cmd)))
           else:
-            print("ERROR: !" + cmd + " command not found.")
+            print("ERROR: " + self.prefix + cmd + " command not found.")
         
         #if self.message == str(self.prefix + "command"):
         #    response = "This is a test of the command system."
