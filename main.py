@@ -2,6 +2,7 @@
 import json
 import time
 import requests
+import re
 from commands import Dudes
 try:
     from .credentials import Credentials
@@ -79,6 +80,8 @@ class YTChat:
                 #for msg in msgs:
                 #    self.handle_msg(msg)
                   self.handle_msg(msg)
+                  if re.find("subscribe",msg):
+                    self.delete_message(msg)
                 delay = 2.16
                 #delay = resp['pollingIntervalMillis']/250
                 #/1000
@@ -157,6 +160,15 @@ class YTChat:
           print("Unrecognized error:\n")
           resp = r.json()
           print(json.dumps(resp, indent=4, sort_keys=True))
+
+    def delete_message(self,msg):
+        token_str = self.credentials.read(num=10)
+        msg = msg["snippet"]["textMessageDetails"]["messageText"]
+        msgid = msg["id"]
+        data = {'id':msgid}
+        url = 'https://youtube.googleapis.com/youtube/v3/liveChat/messages'
+        headers = {'Authorization':'Bearer "' + token_str + '"', 'Accept': 'application/json','Content-Type': 'application/json'}
+        requests.delete(url, headers=headers, data=data)
 
 if __name__ == '__main__':
     yt = YTChat(pprint)

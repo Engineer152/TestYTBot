@@ -1,4 +1,4 @@
-# CircBot
+# DPG Mod Bot
 YouTube LiveStream Chatbot
 
 # Quickstart

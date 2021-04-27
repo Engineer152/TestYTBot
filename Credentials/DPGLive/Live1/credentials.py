@@ -3,6 +3,8 @@ import os.path
 import httplib2
 from oauth2client import client
 
+#python3 ~/DPGLive/Live1/credentials.py
+
 class Credentials:
     credentials = {}
 
@@ -15,16 +17,16 @@ class Credentials:
         #    sys.exit(1)
         # LIST OF MULTIPLE STREAM CREDENTIALS
         if num == 1:
-          credentialsFile = open("./DPGBot1/OAuthCredentials.json", "r")
+          credentialsFile = open("./Credentials/DPGBot1/OAuthCredentials.json", "r")
         if num == 2:
-          credentialsFile = open("./DPGBot2/OAuthCredentials.json", "r")
+          credentialsFile = open("./Credentials/DPGBot2/OAuthCredentials.json", "r")
         if num == 3:
-          credentialsFile = open("./DPGBot3/OAuthCredentials.json", "r")
+          credentialsFile = open("./Credentials/DPGBot3/OAuthCredentials.json", "r")
         if num == 4:
-          credentialsFile = open("./DPGBot4/OAuthCredentials.json", "r")
+          credentialsFile = open("./Credentials/DPGBot4/OAuthCredentials.json", "r")
         # MAIN BOT CREDENTIALS
         elif num == 10: 
-          credentialsFile = open("./MainDPGBot/dpgbotOAuthCredentials.json", "r")
+          credentialsFile = open("./Credentials/MainDPGBot/dpgbotOAuthCredentials.json", "r")
         credentialsJSON = credentialsFile.read()
 
         self.credentials = client.OAuth2Credentials.from_json(credentialsJSON)
